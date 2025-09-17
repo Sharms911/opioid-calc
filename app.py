@@ -1,14 +1,7 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify
 import os
 
-app = Flask(__name__, static_folder='static', static_url_path='/static')
-
-# Add some debugging
-@app.before_first_request
-def before_first_request():
-    print("Flask app is starting...")
-    print(f"Static folder: {app.static_folder}")
-    print(f"Template folder: {app.template_folder}")
+app = Flask(__name__)
 
 # Opioid conversion factors to MME (Morphine Milligram Equivalents)
 # Based on CDC guidelines and clinical practice
@@ -39,7 +32,15 @@ MME_THRESHOLDS = {
 @app.route('/')
 def index():
     """Main calculator page"""
-    return render_template('index.html', opioids=OPIOID_CONVERSIONS)
+    try:
+        return render_template('index.html', opioids=OPIOID_CONVERSIONS)
+    except Exception as e:
+        return f"Template error: {str(e)}", 500
+
+@app.route('/test')
+def test():
+    """Simple test route"""
+    return "Flask app is working!"
 
 @app.route('/health')
 def health_check():
