@@ -1,7 +1,14 @@
 from flask import Flask, render_template, request, jsonify, send_from_directory
 import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
+
+# Add some debugging
+@app.before_first_request
+def before_first_request():
+    print("Flask app is starting...")
+    print(f"Static folder: {app.static_folder}")
+    print(f"Template folder: {app.template_folder}")
 
 # Opioid conversion factors to MME (Morphine Milligram Equivalents)
 # Based on CDC guidelines and clinical practice
@@ -33,6 +40,11 @@ MME_THRESHOLDS = {
 def index():
     """Main calculator page"""
     return render_template('index.html', opioids=OPIOID_CONVERSIONS)
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint"""
+    return jsonify({"status": "healthy", "message": "Opioid calculator is running"})
 
 @app.route('/calculate', methods=['POST'])
 def calculate_mme():
@@ -154,11 +166,6 @@ def convert_opioid():
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 400
-
-@app.route('/static/<path:filename>')
-def static_files(filename):
-    """Serve static files including PWA files"""
-    return send_from_directory('static', filename)
 
 if __name__ == '__main__':
     # Use environment port if available (for deployment)
