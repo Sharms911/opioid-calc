@@ -29,6 +29,56 @@
     <style>
         .conversion-result { border-left: 4px solid #28a745; background-color: #f8f9fa; }
         .warning-box { border-left: 4px solid #ffc107; background-color: #fffdf3; }
+        
+        /* Calculation step styling */
+        .calculation-steps {
+            position: relative;
+        }
+        .calculation-steps::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 30px;
+            bottom: 30px;
+            width: 2px;
+            background: linear-gradient(to bottom, #0d6efd 0%, #198754 100%);
+            opacity: 0.3;
+        }
+        .step-box {
+            position: relative;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent !important;
+        }
+        .step-box:hover {
+            transform: translateX(5px);
+            border-left: 3px solid #0d6efd !important;
+            box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1);
+        }
+        .formula-box {
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        }
+        .formula-box code {
+            color: #0d6efd;
+            font-weight: 600;
+        }
+        .badge {
+            padding: 0.35em 0.65em;
+            font-size: 0.85em;
+        }
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+        .card {
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+        }
     </style>
 </head>
 <body>
@@ -173,8 +223,9 @@
             const toOpioidName = document.getElementById('toOpioid').selectedOptions[0].text;
             
             let html = `
-                <div class="conversion-result p-3 rounded mb-3">
-                    <div class="row text-center">
+                <div class="alert alert-info">
+                    <h5><i class="fas fa-exchange-alt me-2"></i>Conversion Summary</h5>
+                    <div class="row text-center mt-3">
                         <div class="col-md-3">
                             <h6>Original Dose</h6>
                             <div class="h4 text-primary">${data.original_dose} mg</div>
@@ -198,9 +249,149 @@
                     </div>
                 </div>
                 
+                <h6 class="mt-4"><i class="fas fa-calculator me-2"></i>Detailed Conversion Calculation:</h6>
+                
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-3 text-primary">
+                            <i class="fas fa-arrow-right me-2"></i>Step 1: Convert ${fromOpioidName} to MME
+                        </h6>
+                        <div class="calculation-steps">
+                            <div class="step-box p-3 bg-light rounded mb-2">
+                                <div class="row align-items-center">
+                                    <div class="col-md-12">
+                                        <span class="badge bg-secondary me-2">Formula</span>
+                                        <strong>MME = Original Dose × Conversion Factor</strong>
+                                    </div>
+                                </div>
+                                <div class="mt-2 ms-4">
+                                    <div><i class="fas fa-circle text-primary me-2" style="font-size: 8px;"></i>Original dose: <code>${data.original_dose} mg</code></div>
+                                    <div><i class="fas fa-circle text-primary me-2" style="font-size: 8px;"></i>Conversion factor for ${fromOpioidName}: <code>${data.from_factor}</code></div>
+                                </div>
+                            </div>
+                            
+                            <div class="step-box p-3 bg-light rounded mb-2">
+                                <div class="row align-items-center">
+                                    <div class="col-md-12">
+                                        <span class="badge bg-secondary me-2">Calculate</span>
+                                        <strong>Apply the formula:</strong>
+                                    </div>
+                                </div>
+                                <div class="mt-2 ms-4">
+                                    <div class="formula-box p-2 bg-white rounded border">
+                                        <code>MME = ${data.original_dose} mg × ${data.from_factor} = ${data.mme_equivalent} MME</code>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="step-box p-3 bg-info bg-opacity-10 rounded">
+                                <div class="row align-items-center">
+                                    <div class="col-md-12">
+                                        <span class="badge bg-info me-2">Result</span>
+                                        <strong>MME Equivalent:</strong>
+                                        <span class="fs-5 text-info ms-2"><strong>${data.mme_equivalent} MME</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-3 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-3 text-primary">
+                            <i class="fas fa-arrow-right me-2"></i>Step 2: Convert MME to ${toOpioidName}
+                        </h6>
+                        <div class="calculation-steps">
+                            <div class="step-box p-3 bg-light rounded mb-2">
+                                <div class="row align-items-center">
+                                    <div class="col-md-12">
+                                        <span class="badge bg-secondary me-2">Formula</span>
+                                        <strong>Target Dose = MME ÷ Target Conversion Factor</strong>
+                                    </div>
+                                </div>
+                                <div class="mt-2 ms-4">
+                                    <div><i class="fas fa-circle text-primary me-2" style="font-size: 8px;"></i>MME value: <code>${data.mme_equivalent} MME</code></div>
+                                    <div><i class="fas fa-circle text-primary me-2" style="font-size: 8px;"></i>Conversion factor for ${toOpioidName}: <code>${data.to_factor}</code></div>
+                                </div>
+                            </div>
+                            
+                            <div class="step-box p-3 bg-light rounded mb-2">
+                                <div class="row align-items-center">
+                                    <div class="col-md-12">
+                                        <span class="badge bg-secondary me-2">Calculate</span>
+                                        <strong>Apply the formula:</strong>
+                                    </div>
+                                </div>
+                                <div class="mt-2 ms-4">
+                                    <div class="formula-box p-2 bg-white rounded border">
+                                        <code>Target Dose = ${data.mme_equivalent} MME ÷ ${data.to_factor} = ${data.converted_dose} mg</code>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="step-box p-3 bg-secondary bg-opacity-10 rounded">
+                                <div class="row align-items-center">
+                                    <div class="col-md-12">
+                                        <span class="badge bg-secondary me-2">Result</span>
+                                        <strong>Calculated ${toOpioidName} Dose:</strong>
+                                        <span class="fs-5 text-secondary ms-2"><strong>${data.converted_dose} mg</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-3 shadow-sm border-success">
+                    <div class="card-body">
+                        <h6 class="card-subtitle mb-3 text-success">
+                            <i class="fas fa-shield-alt me-2"></i>Step 3: Apply Safety Reduction (Cross-Tolerance)
+                        </h6>
+                        <div class="calculation-steps">
+                            <div class="step-box p-3 bg-light rounded mb-2">
+                                <div class="row align-items-center">
+                                    <div class="col-md-12">
+                                        <span class="badge bg-warning me-2">Safety Factor</span>
+                                        <strong>Apply 25% dose reduction for incomplete cross-tolerance</strong>
+                                    </div>
+                                </div>
+                                <div class="mt-2 ms-4">
+                                    <div><i class="fas fa-circle text-warning me-2" style="font-size: 8px;"></i>Calculated dose: <code>${data.converted_dose} mg</code></div>
+                                    <div><i class="fas fa-circle text-warning me-2" style="font-size: 8px;"></i>Safety factor: <code>0.75 (75% of calculated dose)</code></div>
+                                </div>
+                            </div>
+                            
+                            <div class="step-box p-3 bg-light rounded mb-2">
+                                <div class="row align-items-center">
+                                    <div class="col-md-12">
+                                        <span class="badge bg-warning me-2">Calculate</span>
+                                        <strong>Apply safety reduction:</strong>
+                                    </div>
+                                </div>
+                                <div class="mt-2 ms-4">
+                                    <div class="formula-box p-2 bg-white rounded border">
+                                        <code>Safe Dose = ${data.converted_dose} mg × 0.75 = ${data.safe_starting_dose} mg</code>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="step-box p-3 bg-success bg-opacity-10 rounded">
+                                <div class="row align-items-center">
+                                    <div class="col-md-12">
+                                        <span class="badge bg-success me-2">Final Result</span>
+                                        <strong>Recommended Safe Starting Dose:</strong>
+                                        <span class="fs-4 text-success ms-2"><strong>${data.safe_starting_dose} mg ${toOpioidName}</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="warning-box p-3 rounded">
                     <h6><i class="fas fa-exclamation-triangle text-warning"></i> Clinical Warning</h6>
-                    <p class="mb-2">${data.warning}</p>
+                    <p class="mb-2"><strong>${data.warning}</strong></p>
                     <ul class="mb-0 small">
                         <li>Monitor patient closely during transition period</li>
                         <li>Adjust dose based on patient response and pain control</li>

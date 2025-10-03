@@ -35,6 +35,57 @@
         .navbar-brand { font-weight: bold; }
         .warning-icon { color: #dc3545; }
         .safety-box { border-left: 4px solid #17a2b8; background-color: #f8f9fa; }
+        
+        /* Calculation step styling */
+        .calculation-steps {
+            position: relative;
+        }
+        .calculation-steps::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 30px;
+            bottom: 30px;
+            width: 2px;
+            background: linear-gradient(to bottom, #0d6efd 0%, #198754 100%);
+            opacity: 0.3;
+        }
+        .step-box {
+            position: relative;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent !important;
+        }
+        .step-box:hover {
+            transform: translateX(5px);
+            border-left: 3px solid #0d6efd !important;
+            box-shadow: 0 0.125rem 0.5rem rgba(0,0,0,0.1);
+        }
+        .formula-box {
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        }
+        .formula-box code {
+            color: #0d6efd;
+            font-weight: 600;
+        }
+        .badge {
+            padding: 0.35em 0.65em;
+            font-size: 0.85em;
+        }
+        .card {
+            border: 1px solid rgba(0,0,0,.125);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important;
+        }
+        code {
+            background-color: #f8f9fa;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -60,30 +111,43 @@
                     </div>
                     <div class="card-body">
                         <form id="mmeForm">
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <label class="form-label">Opioid Medication</label>
-                                    <select class="form-select" name="opioid" id="opioid" required>
-                                        <option value="">Select medication...</option>
-                                        {% for opioid, data in opioids.items() %}
-                                        <option value="{{ opioid }}">{{ opioid.replace('_', ' ').title() }}</option>
-                                        {% endfor %}
-                                    </select>
+                            <div id="medications">
+                                <div class="medication-row" data-med="0">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Opioid Medication</label>
+                                            <select class="form-select" name="opioid" required>
+                                                <option value="">Select medication...</option>
+                                                {% for opioid, data in opioids.items() %}
+                                                <option value="{{ opioid }}">{{ opioid.replace('_', ' ').title() }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Dose (mg)</label>
+                                            <input type="number" class="form-control" name="dose" step="0.1" min="0" required>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">Times per day</label>
+                                            <input type="number" class="form-control" name="frequency" min="1" max="24" value="1" required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label">&nbsp;</label>
+                                            <button type="button" class="btn btn-outline-danger w-100 remove-med" onclick="removeMedication(0)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Dose (mg)</label>
-                                    <input type="number" class="form-control" name="dose" id="dose" step="0.1" min="0" required>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Times per day</label>
-                                    <input type="number" class="form-control" name="frequency" id="frequency" min="1" max="24" value="1" required>
-                                </div>
-                                <div class="col-md-2">
-                                    <label class="form-label">&nbsp;</label>
-                                    <button type="submit" class="btn btn-primary w-100">
-                                        <i class="fas fa-calculator"></i> Calculate
-                                    </button>
-                                </div>
+                            </div>
+                            
+                            <div class="mt-3">
+                                <button type="button" class="btn btn-outline-primary" onclick="addMedication()">
+                                    <i class="fas fa-plus"></i> Add Another Medication
+                                </button>
+                                <button type="submit" class="btn btn-primary ms-2">
+                                    <i class="fas fa-calculator"></i> Calculate MME
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -103,6 +167,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        let medicationCount = 1;
+
         // Service Worker Registration for PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
@@ -147,18 +213,76 @@
             }
         }
 
+        function addMedication() {
+            const medicationsDiv = document.getElementById('medications');
+            const newMedDiv = document.createElement('div');
+            newMedDiv.className = 'medication-row';
+            newMedDiv.setAttribute('data-med', medicationCount);
+            
+            newMedDiv.innerHTML = `
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Opioid Medication</label>
+                        <select class="form-select" name="opioid" required>
+                            <option value="">Select medication...</option>
+                            {% for opioid, data in opioids.items() %}
+                            <option value="{{ opioid }}">{{ opioid.replace('_', ' ').title() }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Dose (mg)</label>
+                        <input type="number" class="form-control" name="dose" step="0.1" min="0" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Times per day</label>
+                        <input type="number" class="form-control" name="frequency" min="1" max="24" value="1" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">&nbsp;</label>
+                        <button type="button" class="btn btn-outline-danger w-100 remove-med" onclick="removeMedication(${medicationCount})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            medicationsDiv.appendChild(newMedDiv);
+            medicationCount++;
+        }
+
+        function removeMedication(index) {
+            const medRow = document.querySelector(`[data-med="${index}"]`);
+            if (medRow && document.querySelectorAll('.medication-row').length > 1) {
+                medRow.remove();
+            }
+        }
+
         document.getElementById('mmeForm').addEventListener('submit', function(e) {
             e.preventDefault();
             calculateMME();
         });
 
         function calculateMME() {
-            const opioid = document.getElementById('opioid').value;
-            const dose = document.getElementById('dose').value;
-            const frequency = document.getElementById('frequency').value;
+            const medications = [];
+            const medRows = document.querySelectorAll('.medication-row');
+            
+            medRows.forEach(row => {
+                const opioid = row.querySelector('[name="opioid"]').value;
+                const dose = row.querySelector('[name="dose"]').value;
+                const frequency = row.querySelector('[name="frequency"]').value;
+                
+                if (opioid && dose && frequency) {
+                    medications.push({
+                        opioid: opioid,
+                        dose: parseFloat(dose),
+                        frequency: parseInt(frequency)
+                    });
+                }
+            });
 
-            if (!opioid || !dose || !frequency) {
-                alert('Please fill in all fields.');
+            if (medications.length === 0) {
+                alert('Please add at least one medication.');
                 return;
             }
 
@@ -167,11 +291,7 @@
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ 
-                    opioid: opioid,
-                    dose: parseFloat(dose),
-                    frequency: parseInt(frequency)
-                })
+                body: JSON.stringify({ medications: medications })
             })
             .then(response => response.json())
             .then(data => {
@@ -191,36 +311,134 @@
             const resultsDiv = document.getElementById('results');
             const contentDiv = document.getElementById('resultsContent');
             
+            let riskClass = 'risk-' + data.risk_level;
+            let riskIcon = data.risk_level === 'critical' ? 'fa-exclamation-triangle' : 
+                          data.risk_level === 'high' ? 'fa-exclamation-circle' :
+                          data.risk_level === 'moderate' ? 'fa-exclamation' : 'fa-check-circle';
+            
             let html = `
-                <div class="alert alert-info">
-                    <h5><strong>Total Daily MME: ${data.total_mme}</strong></h5>
+                <div class="alert ${riskClass} d-flex align-items-center">
+                    <i class="fas ${riskIcon} me-2"></i>
+                    <div>
+                        <strong>Total Daily MME: ${data.total_mme}</strong>
+                        <div class="mt-1">Risk Level: <strong>${data.risk_level.toUpperCase()}</strong></div>
+                    </div>
                 </div>
                 
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <tr>
-                            <th>Medication</th>
-                            <td>${data.opioid.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</td>
-                        </tr>
-                        <tr>
-                            <th>Dose</th>
-                            <td>${data.dose} mg</td>
-                        </tr>
-                        <tr>
-                            <th>Frequency</th>
-                            <td>${data.frequency}x daily</td>
-                        </tr>
-                        <tr>
-                            <th>Conversion Factor</th>
-                            <td>${data.factor}</td>
-                        </tr>
-                        <tr class="table-primary">
-                            <th>Total Daily MME</th>
-                            <td><strong>${data.total_mme}</strong></td>
-                        </tr>
-                    </table>
-                </div>
+                <h6><i class="fas fa-calculator me-2"></i>Calculation Breakdown:</h6>
             `;
+            
+            // Show detailed calculation for each medication
+            data.calculations.forEach((calc, index) => {
+                html += `
+                    <div class="card mb-3 shadow-sm">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-3 text-primary">
+                                <i class="fas fa-pills me-2"></i>${calc.medication}
+                            </h6>
+                            <div class="calculation-steps">
+                                <div class="step-box p-3 bg-light rounded mb-2">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-8">
+                                            <span class="badge bg-secondary me-2">Step 1</span>
+                                            <strong>Identify Values:</strong>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 ms-4">
+                                        <div><i class="fas fa-circle text-primary me-2" style="font-size: 8px;"></i>Dose per administration: <code>${calc.dose} mg</code></div>
+                                        <div><i class="fas fa-circle text-primary me-2" style="font-size: 8px;"></i>Frequency: <code>${calc.frequency} times per day</code></div>
+                                        <div><i class="fas fa-circle text-primary me-2" style="font-size: 8px;"></i>Conversion factor: <code>${calc.factor}</code></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="step-box p-3 bg-light rounded mb-2">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-8">
+                                            <span class="badge bg-secondary me-2">Step 2</span>
+                                            <strong>Apply Formula:</strong>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 ms-4">
+                                        <div class="formula-box p-2 bg-white rounded border">
+                                            <code>Daily MME = Dose × Frequency × Conversion Factor</code>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="step-box p-3 bg-light rounded mb-2">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-8">
+                                            <span class="badge bg-secondary me-2">Step 3</span>
+                                            <strong>Calculate:</strong>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 ms-4">
+                                        <div class="formula-box p-2 bg-white rounded border">
+                                            <code>Daily MME = ${calc.dose} mg × ${calc.frequency} × ${calc.factor}</code>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="step-box p-3 bg-success bg-opacity-10 rounded">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-12">
+                                            <span class="badge bg-success me-2">Result</span>
+                                            <strong>Daily MME for ${calc.medication}:</strong>
+                                            <span class="fs-5 text-success ms-2"><strong>${calc.daily_mme} MME</strong></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Show total calculation if multiple medications
+            if (data.calculations.length > 1) {
+                html += `
+                    <div class="card mb-3 shadow-sm border-primary">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-3 text-primary">
+                                <i class="fas fa-plus-circle me-2"></i>Total MME Calculation
+                            </h6>
+                            <div class="step-box p-3 bg-light rounded mb-2">
+                                <div class="row align-items-center">
+                                    <div class="col-md-12">
+                                        <span class="badge bg-secondary me-2">Final Step</span>
+                                        <strong>Sum all medication MME values:</strong>
+                                    </div>
+                                </div>
+                                <div class="mt-2 ms-4">
+                                    <div class="formula-box p-2 bg-white rounded border">
+                                        <code>Total Daily MME = ${data.calculations.map(c => c.daily_mme).join(' + ')}</code>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="step-box p-3 bg-primary bg-opacity-10 rounded">
+                                <div class="row align-items-center">
+                                    <div class="col-md-12">
+                                        <span class="badge bg-primary me-2">Final Result</span>
+                                        <strong>Total Daily MME:</strong>
+                                        <span class="fs-4 text-primary ms-2"><strong>${data.total_mme} MME</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            html += `
+                <h6 class="mt-4"><i class="fas fa-exclamation-triangle me-2"></i>Safety Warnings:</h6>
+                <ul class="list-unstyled">
+            `;
+            
+            data.warnings.forEach(warning => {
+                html += `<li class="mb-2"><i class="fas fa-info-circle text-info me-2"></i>${warning}</li>`;
+            });
+            
+            html += '</ul>';
             
             contentDiv.innerHTML = html;
             resultsDiv.style.display = 'block';
